@@ -1,108 +1,124 @@
-import React from 'react';
-import { NewsletterStats } from '../types/calculator';
+import { MonthlyExpenses } from '../types/calculator';
 import { ValidationError } from '../lib/validation';
 
-interface StatsInputProps {
-  stats: NewsletterStats;
-  onChange: (stats: NewsletterStats) => void;
+interface ExpensesInputProps {
+  expenses: MonthlyExpenses;
+  onChange: (expenses: MonthlyExpenses) => void;
   errors?: ValidationError[];
 }
 
-export function StatsInput({ stats, onChange, errors = [] }: StatsInputProps) {
+export function ExpensesInput({ expenses, onChange, errors = [] }: ExpensesInputProps) {
+  const handleChange = (field: keyof MonthlyExpenses, value: number) => {
+    onChange({
+      ...expenses,
+      [field]: value,
+      total: field === 'total' ? value : expenses.contentAndESP + expenses.seo + expenses.adManagement
+    });
+  };
+
   const getErrorMessage = (field: string) => {
-    const error = errors.find(e => e.field === `stats.${field}`);
+    const error = errors.find(e => e.field === `expenses.${field}`);
     return error?.message;
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Newsletter Stats</h2>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Monthly Expenses</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Existing Subscribers
+            Content + ESP Management
           </label>
           <input
             type="number"
-            value={stats.existingSubscribers}
-            onChange={(e) => onChange({ ...stats, existingSubscribers: parseFloat(e.target.value) || 0 })}
+            value={expenses.contentAndESP}
+            onChange={(e) => handleChange('contentAndESP', parseFloat(e.target.value) || 0)}
             className={`mt-1 block w-full rounded-md shadow-sm focus:border-green-500 focus:ring-green-500 ${
-              getErrorMessage('existingSubscribers') 
+              getErrorMessage('contentAndESP') 
                 ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/50' 
                 : 'border-gray-300 dark:border-gray-700 dark:bg-gray-900'
             } dark:text-white`}
           />
-          {getErrorMessage('existingSubscribers') && (
+          {getErrorMessage('contentAndESP') && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {getErrorMessage('existingSubscribers')}
+              {getErrorMessage('contentAndESP')}
             </p>
           )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Open Rate (%)
+            SEO
           </label>
           <input
             type="number"
-            value={stats.openRate * 100}
-            onChange={(e) => onChange({ ...stats, openRate: (parseFloat(e.target.value) || 0) / 100 })}
+            value={expenses.seo}
+            onChange={(e) => handleChange('seo', parseFloat(e.target.value) || 0)}
             className={`mt-1 block w-full rounded-md shadow-sm focus:border-green-500 focus:ring-green-500 ${
-              getErrorMessage('openRate') 
+              getErrorMessage('seo') 
                 ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/50' 
                 : 'border-gray-300 dark:border-gray-700 dark:bg-gray-900'
             } dark:text-white`}
           />
-          {getErrorMessage('openRate') && (
+          {getErrorMessage('seo') && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {getErrorMessage('openRate')}
+              {getErrorMessage('seo')}
             </p>
           )}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Click Rate (%)
+            Ad Management
           </label>
           <input
             type="number"
-            value={stats.clickRate * 100}
-            onChange={(e) => onChange({ ...stats, clickRate: (parseFloat(e.target.value) || 0) / 100 })}
+            value={expenses.adManagement}
+            onChange={(e) => handleChange('adManagement', parseFloat(e.target.value) || 0)}
             className={`mt-1 block w-full rounded-md shadow-sm focus:border-green-500 focus:ring-green-500 ${
-              getErrorMessage('clickRate') 
+              getErrorMessage('adManagement') 
                 ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/50' 
                 : 'border-gray-300 dark:border-gray-700 dark:bg-gray-900'
             } dark:text-white`}
           />
-          {getErrorMessage('clickRate') && (
+          {getErrorMessage('adManagement') && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {getErrorMessage('clickRate')}
+              {getErrorMessage('adManagement')}
             </p>
           )}
         </div>
 
-        <div>
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Monthly SEO Subscribers
+            Total Monthly Expenses
+          </label>
+          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+            ${expenses.total.toLocaleString()}
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Ad Spend Budget Per Month
           </label>
           <input
             type="number"
-            value={stats.subscribersFromSEO}
-            onChange={(e) => onChange({ ...stats, subscribersFromSEO: parseFloat(e.target.value) || 0 })}
+            value={expenses.adSpendBudget}
+            onChange={(e) => handleChange('adSpendBudget', parseFloat(e.target.value) || 0)}
             className={`mt-1 block w-full rounded-md shadow-sm focus:border-green-500 focus:ring-green-500 ${
-              getErrorMessage('subscribersFromSEO') 
+              getErrorMessage('adSpendBudget') 
                 ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/50' 
                 : 'border-gray-300 dark:border-gray-700 dark:bg-gray-900'
             } dark:text-white`}
           />
-          {getErrorMessage('subscribersFromSEO') && (
+          {getErrorMessage('adSpendBudget') && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
-              {getErrorMessage('subscribersFromSEO')}
+              {getErrorMessage('adSpendBudget')}
             </p>
           )}
         </div>
       </div>
     </div>
   );
-}
+} 
