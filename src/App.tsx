@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { ThemeProvider } from './components/ui/theme-provider';
 import { NavMenu } from './components/ui/nav-menu';
 import { Card } from './components/ui/card';
 import { Spinner } from './components/ui/spinner';
@@ -18,9 +17,39 @@ import { calculateProjections as calculateProjectionsUtil } from './lib/calculat
 import { validateCalculatorState, ValidationError } from './lib/validation';
 import { ProjectionChart } from './components/ProjectionChart';
 import { Tabs } from './components/ui/tabs';
-import bgImage from './assets/dark-royal-green-gradient-seamless-pattern-vector-52062964.jpg';
+import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
+import { theme } from './theme/colors';
 
-function CalculatorApp() {
+// Add CSS property definition for gradient angle
+const styleSheet = document.createElement('style');
+styleSheet.textContent = `
+  @property --gradient-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+
+  @keyframes rotate {
+    0% {
+      --gradient-angle: 0deg;
+    }
+    100% {
+      --gradient-angle: 360deg;
+    }
+  }
+
+  .rotating-gradient {
+    background: linear-gradient(var(--gradient-angle), ${theme.accentAlt}, ${theme.secondary});
+    animation: rotate 8s linear infinite;
+  }
+`;
+document.head.appendChild(styleSheet);
+
+function App() {
+  const { user, loading } = useAuth();
+  const [showSignUp, setShowSignUp] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [activeTab, setActiveTab] = useState('charts');
   const [isCalculating, setIsCalculating] = useState(false);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
   const [calculatorState, setCalculatorState] = useState<CalculatorState>({
@@ -86,8 +115,15 @@ function CalculatorApp() {
     }
   });
 
+  const handleStateChange = (newState: Partial<CalculatorState>) => {
+    setCalculatorState(prev => {
+      const updated = { ...prev, ...newState };
+      setValidationErrors(validateCalculatorState(updated));
+      return updated;
+    });
+  };
+
   const calculateProjections = async () => {
-    // Validate state before calculating
     const errors = validateCalculatorState(calculatorState);
     setValidationErrors(errors);
     
@@ -107,208 +143,205 @@ function CalculatorApp() {
     }
   };
 
-  const handleStateChange = (newState: Partial<CalculatorState>) => {
-    setCalculatorState(prev => {
-      const updated = { ...prev, ...newState };
-      setValidationErrors(validateCalculatorState(updated));
-      return updated;
-    });
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
   };
 
-  const getErrorsForField = (field: string) => {
-    return validationErrors.filter(error => error.field === field);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
-    <div className="relative">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Newsletter Monetization Calculator
-            </h1>
-            <SavedStates
-              currentState={calculatorState}
-              onLoad={(state) => {
-                setCalculatorState(state);
-                setValidationErrors(validateCalculatorState(state));
-              }}
-            />
-          </div>
+    <div className="min-h-screen relative">
+      <div className="rotating-gradient absolute inset-0" />
+      <div className="absolute inset-0 bg-white/10 backdrop-blur-[2px]" />
+      <div className="relative">
+        <Header />
+        <main>
+          {!user ? (
+            <div className="max-w-md mx-auto p-6">
+              <Card className="p-8">
+                {showSignUp ? (
+                  <>
+                    <SignUpForm />
+                    <p className="mt-4 text-center text-gray-600">
+                      Already have an account?{' '}
+                      <button
+                        onClick={() => setShowSignUp(false)}
+                        className="text-green-600 hover:text-green-700"
+                      >
+                        Sign in
+                      </button>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <SignInForm />
+                    <p className="mt-4 text-center text-gray-600">
+                      Don't have an account?{' '}
+                      <button
+                        onClick={() => setShowSignUp(true)}
+                        className="text-green-600 hover:text-green-700"
+                      >
+                        Sign up
+                      </button>
+                    </p>
+                  </>
+                )}
+              </Card>
+            </div>
+          ) : showOnboarding ? (
+            <OnboardingFlow onComplete={handleOnboardingComplete} />
+          ) : (
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="space-y-8">
+                <div className="flex justify-between items-center">
+                  <h1 className="text-3xl font-bold" style={{ color: theme.text }}>
+                    Newsletter Monetization
+                  </h1>
+                  <SavedStates
+                    currentState={calculatorState}
+                    onLoad={(state) => {
+                      setCalculatorState(state);
+                      setValidationErrors(validateCalculatorState(state));
+                    }}
+                  />
+                </div>
 
-          <StatsInput
-            stats={calculatorState.stats}
-            onChange={(stats) => handleStateChange({ stats })}
-            errors={validationErrors.filter(error => error.field.startsWith('stats.'))}
-          />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-8">
+                    <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                      <RevenueSourcesInput
+                        upscribe={calculatorState.upscribe}
+                        paidSubscriptions={calculatorState.paidSubscriptions}
+                        sponsorships={calculatorState.sponsorships}
+                        highTicketOffering={calculatorState.highTicketOffering}
+                        affiliateSales={calculatorState.affiliateSales}
+                        onUpscribeChange={(upscribe) => handleStateChange({ upscribe })}
+                        onPaidSubscriptionsChange={(paidSubscriptions) => handleStateChange({ paidSubscriptions })}
+                        onSponsorshipsChange={(sponsorships) => handleStateChange({ sponsorships })}
+                        onHighTicketChange={(highTicketOffering) => handleStateChange({ highTicketOffering })}
+                        onAffiliateSalesChange={(affiliateSales) => handleStateChange({ affiliateSales })}
+                      />
+                    </Card>
+                    <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                      <StatsInput
+                        stats={calculatorState.stats}
+                        onChange={(stats) => handleStateChange({ stats })}
+                      />
+                    </Card>
+                    <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                      <ExpensesInput
+                        expenses={calculatorState.expenses}
+                        onChange={(expenses) => handleStateChange({ expenses })}
+                      />
+                    </Card>
 
-          <RevenueSourcesInput
-            upscribe={calculatorState.upscribe}
-            paidSubscriptions={calculatorState.paidSubscriptions}
-            sponsorships={calculatorState.sponsorships}
-            highTicketOffering={calculatorState.highTicketOffering}
-            affiliateSales={calculatorState.affiliateSales}
-            onUpscribeChange={(upscribe) => handleStateChange({ upscribe })}
-            onPaidSubscriptionsChange={(paidSubscriptions) => handleStateChange({ paidSubscriptions })}
-            onSponsorshipsChange={(sponsorships) => handleStateChange({ sponsorships })}
-            onHighTicketChange={(highTicketOffering) => handleStateChange({ highTicketOffering })}
-            onAffiliateSalesChange={(affiliateSales) => handleStateChange({ affiliateSales })}
-            errors={validationErrors.filter(error => 
-              error.field.startsWith('upscribe.') ||
-              error.field.startsWith('paidSubscriptions.') ||
-              error.field.startsWith('sponsorships.') ||
-              error.field.startsWith('highTicketOffering.') ||
-              error.field.startsWith('affiliateSales.')
-            )}
-          />
+                    <button
+                      onClick={calculateProjections}
+                      disabled={isCalculating || validationErrors.length > 0}
+                      className="w-full py-4 px-4 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-[1.02] hover:shadow-lg"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${theme.primary} 0%, ${theme.secondary} 100%)`,
+                        opacity: isCalculating || validationErrors.length > 0 ? 0.8 : 1,
+                        cursor: isCalculating || validationErrors.length > 0 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {isCalculating ? (
+                        <>
+                          <Spinner className="w-5 h-5" />
+                          Calculating...
+                        </>
+                      ) : validationErrors.length > 0 ? (
+                        'Fix validation errors to continue'
+                      ) : (
+                        'Calculate Projections'
+                      )}
+                    </button>
+                  </div>
 
-          <ExpensesInput
-            expenses={calculatorState.expenses}
-            onChange={(expenses) => handleStateChange({ expenses })}
-            errors={validationErrors.filter(error => error.field.startsWith('expenses.'))}
-          />
-
-          <div className="flex justify-center">
-            <button
-              onClick={calculateProjections}
-              disabled={isCalculating || validationErrors.length > 0}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 flex items-center gap-2"
-            >
-              {isCalculating ? (
-                <>
-                  <Spinner className="w-5 h-5" />
-                  Calculating...
-                </>
-              ) : validationErrors.length > 0 ? (
-                'Fix validation errors to continue'
-              ) : (
-                'Calculate Projections'
-              )}
-            </button>
-          </div>
-
-          {calculatorState.projections && (
-            <div className="space-y-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Monthly Projections
-              </h2>
-              <Tabs
-                tabs={[
-                  {
-                    id: 'charts',
-                    label: 'Charts',
-                    content: (
-                      <div className="space-y-8">
-                        <ProjectionChart
-                          projections={calculatorState.projections.low}
-                          title="Conservative"
-                        />
-                        <ProjectionChart
-                          projections={calculatorState.projections.mid}
-                          title="Moderate"
-                        />
-                        <ProjectionChart
-                          projections={calculatorState.projections.high}
-                          title="Aggressive"
-                        />
-                        <ProjectionChart
-                          projections={calculatorState.projections.flywheel}
-                          title="Flywheel"
-                        />
-                      </div>
-                    ),
-                  },
-                  {
-                    id: 'details',
-                    label: 'Monthly Details',
-                    content: (
-                      <div className="space-y-8">
-                        <ProjectionsDisplay
-                          projections={calculatorState.projections.low}
-                          title="Conservative Projections"
-                        />
-                        <ProjectionsDisplay
-                          projections={calculatorState.projections.mid}
-                          title="Moderate Projections"
-                        />
-                        <ProjectionsDisplay
-                          projections={calculatorState.projections.high}
-                          title="Aggressive Projections"
-                        />
-                        <ProjectionsDisplay
-                          projections={calculatorState.projections.flywheel}
-                          title="Flywheel Projections"
-                        />
-                      </div>
-                    ),
-                  },
-                ]}
-                defaultTab="charts"
-              />
+                  {calculatorState.projections && (
+                    <div className="space-y-8">
+                      <h2 className="text-2xl font-bold" style={{ color: theme.text }}>
+                        Monthly Projections
+                      </h2>
+                      <Tabs
+                        tabs={[
+                          { id: 'charts', label: 'Charts' },
+                          { id: 'numbers', label: 'Month-by-Month Numbers' },
+                        ]}
+                        activeTab={activeTab}
+                        onChange={setActiveTab}
+                      />
+                      {activeTab === 'charts' ? (
+                        <div className="space-y-8">
+                          <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                            <ProjectionChart
+                              projections={calculatorState.projections.low}
+                              title="Conservative"
+                            />
+                          </Card>
+                          <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                            <ProjectionChart
+                              projections={calculatorState.projections.mid}
+                              title="Moderate"
+                            />
+                          </Card>
+                          <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                            <ProjectionChart
+                              projections={calculatorState.projections.high}
+                              title="Aggressive"
+                            />
+                          </Card>
+                          <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                            <ProjectionChart
+                              projections={calculatorState.projections.flywheel}
+                              title="Flywheel"
+                            />
+                          </Card>
+                        </div>
+                      ) : (
+                        <div className="space-y-8">
+                          <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                            <ProjectionsDisplay
+                              projections={calculatorState.projections.low}
+                              title="Conservative Projections"
+                            />
+                          </Card>
+                          <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                            <ProjectionsDisplay
+                              projections={calculatorState.projections.mid}
+                              title="Moderate Projections"
+                            />
+                          </Card>
+                          <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                            <ProjectionsDisplay
+                              projections={calculatorState.projections.high}
+                              title="Aggressive Projections"
+                            />
+                          </Card>
+                          <Card className="p-6" style={{ background: `linear-gradient(135deg, ${theme.background} 0%, ${theme.successLight} 100%)`, border: `2px solid ${theme.primary}` }}>
+                            <ProjectionsDisplay
+                              projections={calculatorState.projections.flywheel}
+                              title="Flywheel Projections"
+                            />
+                          </Card>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
-        </div>
+        </main>
       </div>
     </div>
   );
 }
 
-function AuthForm() {
-  const [showSignUp, setShowSignUp] = useState(false);
-
-  return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white/90 dark:bg-gray-800/90 p-8 rounded-lg backdrop-blur-sm">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            Newsletter Monetization Calculator
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            {showSignUp ? 'Create an account to get started' : 'Sign in to your account'}
-          </p>
-        </div>
-
-        {showSignUp ? <SignUpForm /> : <SignInForm />}
-
-        <div className="text-center">
-          <button
-            onClick={() => setShowSignUp(!showSignUp)}
-            className="text-sm text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300"
-          >
-            {showSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function App() {
-  const { user } = useAuth();
-
-  return (
-    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-      <div 
-        className="min-h-screen relative"
-        style={{
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'repeat'
-        }}
-      >
-        <div className="absolute inset-0 bg-white/30 dark:bg-gray-900/70 backdrop-blur-[1px]" />
-        <div className="relative">
-          {user ? (
-            <>
-              <Header />
-              <CalculatorApp />
-            </>
-          ) : (
-            <AuthForm />
-          )}
-        </div>
-      </div>
-    </ThemeProvider>
-  );
-}
+export default App;
