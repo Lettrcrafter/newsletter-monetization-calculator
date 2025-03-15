@@ -162,7 +162,9 @@ function App() {
       <div className="relative">
         <Header />
         <main>
-          {!user ? (
+          {showOnboarding ? (
+            <OnboardingFlow onComplete={handleOnboardingComplete} />
+          ) : !user ? (
             <div className="max-w-md mx-auto p-6">
               <Card className="p-8">
                 {showSignUp ? (
@@ -194,8 +196,6 @@ function App() {
                 )}
               </Card>
             </div>
-          ) : showOnboarding ? (
-            <OnboardingFlow onComplete={handleOnboardingComplete} />
           ) : (
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="space-y-8">
