@@ -3,12 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { WelcomeCard } from './WelcomeCard';
 import { NicheSelectionCard } from './NicheSelectionCard';
 import { QuestionCard } from './QuestionCard';
-import { SignUpGate } from './SignUpGate';
 import { ScoreCard } from './ScoreCard';
 import { nmiQuestions } from '../../data/nmiQuestions';
 import { theme } from '../../theme/colors';
 
-export type OnboardingStep = 'welcome' | 'niche' | 'questions' | 'signup' | 'score';
+export type OnboardingStep = 'welcome' | 'niche' | 'questions' | 'score';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -40,7 +39,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     if (currentQuestionIndex < nmiQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
-      setStep('signup'); // Go to signup instead of score
+      setStep('score'); // Go directly to score after last question
     }
   };
 
@@ -50,10 +49,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     } else {
       setStep('niche');
     }
-  };
-
-  const handleSignUpComplete = () => {
-    setStep('score');
   };
 
   const getTotalScore = () => {
@@ -162,18 +157,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 progress={(currentQuestionIndex + 1) / nmiQuestions.length}
                 isLastQuestion={currentQuestionIndex === nmiQuestions.length - 1}
               />
-            </motion.div>
-          )}
-
-          {step === 'signup' && (
-            <motion.div
-              key="signup"
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-            >
-              <SignUpGate onComplete={handleSignUpComplete} />
             </motion.div>
           )}
 
