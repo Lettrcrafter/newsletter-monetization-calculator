@@ -272,20 +272,23 @@ export const MonetizationQuiz: React.FC<MonetizationQuizProps> = ({ onComplete }
       <div className="bg-white rounded-lg shadow-lg p-6">
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-semibold text-gray-700">{currentQ.title}</h3>
-            <span className="text-sm text-gray-500">
+            <h3 className="text-lg font-semibold" style={{ color: theme.text }}>{currentQ.title}</h3>
+            <span className="text-sm" style={{ color: theme.secondary }}>
               Question {currentQuestion + 1} of {questions.length}
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full rounded-full h-2" style={{ backgroundColor: theme.background }}>
             <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
+              className="h-2 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${((currentQuestion + 1) / questions.length) * 100}%`,
+                backgroundColor: theme.success
+              }}
             />
           </div>
         </div>
 
-        <h2 className="text-xl font-semibold text-gray-800 mb-6">{currentQ.question}</h2>
+        <h2 className="text-xl font-semibold mb-6" style={{ color: theme.text }}>{currentQ.question}</h2>
 
         <div className="space-y-4">
           {currentQ.options.map((option, index) => (
@@ -300,11 +303,10 @@ export const MonetizationQuiz: React.FC<MonetizationQuizProps> = ({ onComplete }
                   ? option.score === currentQ.options[answers[currentQuestion]]?.score
                     ? 'border-green-500 bg-green-50'
                     : 'border-gray-200 bg-gray-50'
-                  : 'border-gray-200 hover:border-blue-500 hover:bg-blue-50'
+                  : 'border-gray-200 hover:border-green-500 hover:bg-green-50'
               }`}
             >
-              <span className="block text-gray-700">{option.text}</span>
-              <span className="text-sm text-gray-500 mt-1">Score: {option.score}</span>
+              <span className="block" style={{ color: theme.text }}>{option.text}</span>
             </motion.button>
           ))}
         </div>
@@ -313,9 +315,13 @@ export const MonetizationQuiz: React.FC<MonetizationQuizProps> = ({ onComplete }
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-6 p-4 bg-blue-50 rounded-lg"
+            className="mt-6 p-4 rounded-lg"
+            style={{ 
+              backgroundColor: theme.successLight,
+              border: `1px solid ${theme.success}`
+            }}
           >
-            <p className="text-blue-800">{currentQ.explanation}</p>
+            <p style={{ color: theme.text }}>{currentQ.explanation}</p>
           </motion.div>
         )}
       </div>
